@@ -43,9 +43,9 @@ published state file.
 ## What you see
 
 The mod pins one compact line under the prompt, drawn by the mod itself —
-`cache · 🟢 4:59`, ticking each second — and only that: nothing until a turn
-has touched the cache, and nothing once the window has gone cold. It resumes
-warm from the transcript, so the countdown is there again the moment a
+`cache · 🟢 4:59`, ticking each second, flipping to `cache · COLD` once the
+window passes its TTL — and nothing at all before the first cache touch. It
+resumes warm from the transcript, so the countdown is there again the moment a
 reopened session starts, before any new turn. The line is beside (or instead
 of) ccstatusline's bar; the mod does not depend on it.
 

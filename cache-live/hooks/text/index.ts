@@ -4,16 +4,16 @@ const pad2 = (n: number) => String(n).padStart(2, '0')
 
 /**
  * The pinned status line for a window at a moment: a live countdown while
- * the window is warm, else nothing. The mod draws only a real countdown —
- * never a placeholder for waiting or a fake cold state — so the line just
- * isn't there until a turn has touched the cache, and it goes away the
- * moment the window is past its TTL.
+ * the window is warm, COLD once it has passed its TTL, and nothing before
+ * the first cache touch. The line is always there once a window exists, so a
+ * cold cache reads plainly — the next turn will rebuild it.
  */
 export function statusTextOf(
   window: CacheWindow,
   atMs: number,
 ): string | undefined {
-  if (!window.warm || window.expired(atMs)) return undefined
+  if (!window.warm) return undefined
+  if (window.expired(atMs)) return 'cache · COLD'
 
   return `cache · 🟢 ${countdownOf(window, atMs)}`
 }

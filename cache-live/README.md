@@ -43,12 +43,13 @@ plugin` generates.
 The mod draws the timer itself: while the window is warm in an interactive
 session it pins its own status line under the prompt — `cache · 🟢 4:59` —
 and ticks it once a second through the engine's clock (`$.clock.every` +
-`$.ui.status`). Nothing is drawn until a turn has touched the cache, and the
-line clears the moment the window goes cold; the mod never fakes a cold state.
-This is the mod's own line (not a ccstatusline segment), pinned beside the
-engine's own notices at the bottom of the screen, and the published state file
-(still below) remains for any script that wants the same anchor outside the
-session.
+`$.ui.status`). Nothing is drawn until a turn has touched the cache (the
+line has no "waiting" placeholder); once the window is past its TTL the same
+line reads `cache · COLD`, so a lapsed cache is visible and the next turn
+rebuilds it. This is the mod's own line (not a ccstatusline segment), pinned
+beside the engine's own notices at the bottom of the screen, and the
+published state file (still below) remains for any script that wants the
+same anchor outside the session.
 
 A cache read or a cache write on any finished turn re-arms the window: the
 provider re-arms its TTL on a read as well as a write, so both reset the

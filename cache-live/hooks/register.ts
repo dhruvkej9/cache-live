@@ -33,12 +33,12 @@ export type CacheEngine = {
  * While the window is warm in an interactive session, the mod pins its own
  * status line under the prompt (`$.ui.status`) and ticks the remaining time
  * each second through `$.clock.every`: a live countdown drawn by the mod
- * itself, with no status line script re-invoked and nothing parsed from
- * transcripts. The line is only ever a real countdown: nothing until a turn
- * has touched the cache, and nothing once the window has gone cold. It also
- * publishes the exact window (the anchor, `expiresAt` and the turn's usage)
- * to a JSON file under the cache directory on every turn, for scripts that
- * want the same anchor outside the session.
+ * itself — `cache · 🟢 4:59` — that flips to `cache · COLD` the moment the
+ * window passes its TTL, and reads nothing only before the first cache
+ * touch. No status line script is re-invoked and nothing is parsed from
+ * transcripts. It also publishes the exact window (the anchor, `expiresAt`
+ * and the turn's usage) to a JSON file under the cache directory on every
+ * turn, for scripts that want the same anchor outside the session.
  *
  * The mod draws nothing in non-interactive runs; the hooks still arm and
  * publish there, so a status line script can count the window down from the
