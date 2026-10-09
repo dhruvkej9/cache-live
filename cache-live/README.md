@@ -40,23 +40,21 @@ plugin` generates.
 
 ## What it shows
 
-A pinned line under the prompt (beside the engine's own pinned notices):
-
-| State | Line |
-| --- | --- |
-| Before the first cache touch | *nothing* |
-| Window warm | `cache · HOT m:ss` (the seconds tick live) |
-| TTL passed with no cache activity | *nothing* (the line clears) |
-
-Only a real countdown is rendered — the engine styles a plugin's status line
-as a yellow warning, so an idle "waiting"/"COLD" placeholder would be noise
-until the next turn re-arms it.
+The mod draws nothing itself: it publishes the exact window to the state
+file, and a status line script draws the timer. ccstatusline's cache timer is
+patched to read it (see `ccstatusline` below) — the timer sits in your status
+line, where it belongs.
 
 A cache read or a cache write on any finished turn re-arms the window: the
 provider re-arms its TTL on a read as well as a write, so both reset the
 anchor, and every turn in the session — subagent turns included — reads the
 same shared cache prefix. A turn with no cache activity leaves the window
 where it was; the countdown runs on until it goes cold.
+
+A reopened session is seeded from its own transcript's last cache-touching
+turn, so the timer shows again immediately on `claude --resume` — no new turn
+needed. Only real API usage counts; a command like `/reload-plugins` is no
+news.
 
 Default TTL is 5 minutes; `CC_CACHE_LIVE_TTL=1h` switches to an hour. When
 `CC_CACHE_LIVE_TTL` is unset, the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL`
@@ -104,17 +102,6 @@ The anchor is the finished turn's *completion* time, so during one very
 long turn the fresh window is stamped up to a turn-duration late. That is the
 same best-effort the transcript-based status lines already ship, and per-session
 reads and writes re-arm often enough to keep the countdown honest.
-
-## Tests
-
-    claude plugin test cache-live
-
-The suite drives the mod through the engine's own test kit: a cache-write
-turn arms a five-minute window, the clock ticks the countdown live, a
-cache-read turn re-arms it, a subagent turn shares the session's cache and
-arms it too, a turn without cache activity leaves the window alone, the
-`CC_CACHE_LIVE_TTL` / `CLAUDE_CODE_PROMPT_CACHE_TTL` / `CC_CACHE_LIVE_FILE`
-env honors, and session end stops the tick and clears the line.
 
 ## ccstatusline
 

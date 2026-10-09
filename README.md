@@ -37,14 +37,11 @@ published state file.
 
 ## Project layout
 
-- `cache-live/` — the plugin (`.claude-plugin/plugin.json`, `hooks/`, `tests/`)
+- `cache-live/` — the plugin (`.claude-plugin/plugin.json`, `hooks/`)
 - `.claude-plugin/marketplace.json` — the marketplace manifest
 
 Details, the file schema, and the semantics (what re-arms the window, why the
 anchor is best-effort) are in [`cache-live/README.md`](cache-live/README.md).
 
-## Test
-
-```sh
-claude plugin test cache-live
-```
+Verify it in real sessions instead: open Claude, watch the timer in the status
+line, and it stays right when you `--resume`. No unit suite is kept.
