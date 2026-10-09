@@ -40,10 +40,15 @@ plugin` generates.
 
 ## What it shows
 
-The mod draws nothing itself: it publishes the exact window to the state
-file, and a status line script draws the timer. ccstatusline's cache timer is
-patched to read it (see `ccstatusline` below) — the timer sits in your status
-line, where it belongs.
+The mod draws the timer itself: while the window is warm in an interactive
+session it pins its own status line under the prompt — `cache · 🟢 4:59` —
+and ticks it once a second through the engine's clock (`$.clock.every` +
+`$.ui.status`). Nothing is drawn until a turn has touched the cache, and the
+line clears the moment the window goes cold; the mod never fakes a cold state.
+This is the mod's own line (not a ccstatusline segment), pinned beside the
+engine's own notices at the bottom of the screen, and the published state file
+(still below) remains for any script that wants the same anchor outside the
+session.
 
 A cache read or a cache write on any finished turn re-arms the window: the
 provider re-arms its TTL on a read as well as a write, so both reset the
@@ -103,13 +108,13 @@ long turn the fresh window is stamped up to a turn-duration late. That is the
 same best-effort the transcript-based status lines already ship, and per-session
 reads and writes re-arm often enough to keep the countdown honest.
 
-## ccstatusline
+## ccstatusline (optional)
 
-ccstatusline's built-in Cache Timer derives the window from the transcript
-heuristic, which can flash a false "HOT" on a command like `/reload-plugins`
-(an un-answered user line looks like work in progress). To make it render the
-exact window instead — the plugin's published file for the current session —
-apply the bundled patch:
+The mod draws its own status line under the prompt, so ccstatusline is not
+needed to see the timer. If you also want ccstatusline's *footer bar* to show
+the same exact window (instead of its transcript-heuristic timer, which can
+flash a false "HOT" on a command like `/reload-plugins`), apply the bundled
+patch:
 
     ~/.local/bin/ccstatusline-cachelive-patch
 

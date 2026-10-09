@@ -1,5 +1,6 @@
 {
   "name": "cache-live",
+  "version": "0.2.0",
   "description": "A live prompt-cache timer for the status line. Hooks the finished turns, where the API reports the cache reads and writes the engine already holds, arms the session's cache window (a read or a write re-arms the provider's TTL), and while the window is warm ticks the remaining time each second through the engine's own clock into a pinned line under the prompt: live at one refresh per second, with no status line script re-invoked and nothing parsed from transcripts. It also publishes the exact window (the last write, `expires_at` and the turn's usage) to a JSON file under the cache directory on every turn, so a status line script can count it down from an exact anchor instead of best-effort transcript guesswork.",
   "author": {
     "name": "dhruvkej9"
