@@ -60,7 +60,10 @@ where it was; the countdown runs on until it goes cold.
 
 Default TTL is 5 minutes; `CC_CACHE_LIVE_TTL=1h` switches to an hour. When
 `CC_CACHE_LIVE_TTL` is unset, the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL`
-setting is honored, then the 5-minute default.
+setting is honored, then the 5-minute default. Traffic beats all three: a
+turn that still reads cache more than five minutes after the last anchor
+proves the one-hour tier (a five-minute entry could not be readable then) and
+the window promotes to it.
 
 ## The published file
 

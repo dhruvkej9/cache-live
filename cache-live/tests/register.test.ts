@@ -129,6 +129,31 @@ describe('register', () => {
     expect(parsed(writes.at(-1)!.text).lastWriteAtMs).toBe(NOW + DEFAULT_TTL_MS - 1_000)
   })
 
+  test('a cache read past five minutes past the anchor promotes the window to the hour tier', async ($, on) => {
+    const writes: { path: string; text: string }[] = []
+    const statuses: (string | undefined)[] = []
+    const clock = onWorld(on, writes, statuses)
+
+    await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+    await $.turn.complete(turnOf(WRITING_TURN))
+    await clock.advance(DEFAULT_TTL_MS + 1_000)
+
+    const read = await $.turn.complete(
+      turnOf({
+        input_tokens: 9_000,
+        output_tokens: 300,
+        cache_read_input_tokens: 8_000,
+        cache_creation_input_tokens: 0,
+        model: 'claude-opus-5-5',
+      }),
+    )
+
+    const armed = parsed(writes.at(-1)!.text)
+    expect(armed.ttl, "only an hour cache could still be read now").toBe('1h')
+    expect(armed.expiresAtMs).toBe(NOW + DEFAULT_TTL_MS + 1_000 + HOUR_TTL_MS)
+    expect(statuses.at(-1)).toBe(`cache · HOT ${Math.floor(HOUR_TTL_MS / 60_000)}:00`)
+  })
+
   test('a subagent turn shares the session cache and arms the window', async ($, on) => {
     const writes: { path: string; text: string }[] = []
     const statuses: (string | undefined)[] = []
