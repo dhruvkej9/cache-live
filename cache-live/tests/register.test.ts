@@ -59,6 +59,8 @@ describe('register', () => {
     expiresAtMs: number | null
     lastWriteAtMs: number | null
     ttl: string
+    tokens: { cacheCreated: number }
+    model: string | null
   }
 
   test('session start shows waiting and publishes an empty window', async ($, on) => {
@@ -209,5 +211,7 @@ describe('register', () => {
     expect(last.sessionId).toBe('sess-1')
     expect(last.warm, "the ending session's window is still the API's").toBe(true)
     expect(last.expiresAtMs).toBe(NOW + DEFAULT_TTL_MS)
+    expect(last.tokens.cacheCreated, "the final file keeps the last turn's usage").toBe(10_000)
+    expect(last.model).toBe('claude-opus-5-5')
   })
 })

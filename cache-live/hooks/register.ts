@@ -121,7 +121,7 @@ export function register(on: On) {
     stopTick()
     if (engine !== null) {
       engine.setStatus(undefined)
-      await writeState(engine, null).catch(() => undefined)
+      await writeState(engine, window.usage).catch(() => undefined)
     }
 
     return next(e)
