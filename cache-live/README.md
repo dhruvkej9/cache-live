@@ -12,14 +12,15 @@ every second.
 
 This mod solves both halves from inside the engine:
 
-- **Live.** It hooks the main thread's finished turns — where the API reports
-  the cache reads and writes the engine already holds — arms the session's
-  cache window, and while the window is warm ticks the remaining time each
-  second through the engine's own clock into a pinned line under the prompt:
-  `cache · HOT 4:59`, then `cache · COLD`. One per-second call to
-  `$.ui.status`; nothing heavy is re-run, nothing is parsed from transcripts.
+- **Live.** It hooks the finished turns — where the API reports the cache
+  reads and writes the engine already holds — arms the session's cache
+  window, and while the window is warm ticks the remaining time each second
+  through the engine's own clock into a pinned line under the prompt:
+  `cache · HOT 4:59`, clearing again once the window goes cold. One per-second
+  call to `$.ui.status`; nothing heavy is re-run, nothing is parsed from
+  transcripts.
 - **Exact.** It publishes the window it saw to a small JSON file on every
-  main-thread turn, so a status line script can count the cache down from the
+  finished turn, so a status line script can count the cache down from the
   *exact* anchor and `expires_at` instead of estimating both from transcripts.
 
 No noun is added; the mod is three hooks and a file.
@@ -43,15 +44,19 @@ A pinned line under the prompt (beside the engine's own pinned notices):
 
 | State | Line |
 | --- | --- |
-| Before the first cache touch | `cache · waiting` |
+| Before the first cache touch | *nothing* |
 | Window warm | `cache · HOT m:ss` (the seconds tick live) |
-| TTL passed with no cache activity | `cache · COLD` |
+| TTL passed with no cache activity | *nothing* (the line clears) |
 
-A cache read or a cache write on a main-thread turn re-arms the window: the
+Only a real countdown is rendered — the engine styles a plugin's status line
+as a yellow warning, so an idle "waiting"/"COLD" placeholder would be noise
+until the next turn re-arms it.
+
+A cache read or a cache write on any finished turn re-arms the window: the
 provider re-arms its TTL on a read as well as a write, so both reset the
-anchor. A turn with no cache activity leaves the window where it was, and the
-countdown runs on until it goes COLD. The window is the main conversation's,
-matching the status line's `prompt_cache`; a subagent's turn is not counted.
+anchor, and every turn in the session — subagent turns included — reads the
+same shared cache prefix. A turn with no cache activity leaves the window
+where it was; the countdown runs on until it goes cold.
 
 Default TTL is 5 minutes; `CC_CACHE_LIVE_TTL=1h` switches to an hour. When
 `CC_CACHE_LIVE_TTL` is unset, the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL`
@@ -59,7 +64,7 @@ setting is honored, then the 5-minute default.
 
 ## The published file
 
-Every main-thread turn with usage (and at session start and end) writes the
+Every finished turn with usage (and at session start and end) writes the
 exact window to
 
     ~/.cache/ccstatusline/cache-live-<session_id>.json
@@ -92,7 +97,7 @@ parsing, and the value is right at the moment it is drawn.
 
 ## Best effort
 
-The anchor is the main-thread turn's *completion* time, so during one very
+The anchor is the finished turn's *completion* time, so during one very
 long turn the fresh window is stamped up to a turn-duration late. That is the
 same best-effort the transcript-based status lines already ship, and per-session
 reads and writes re-arm often enough to keep the countdown honest.

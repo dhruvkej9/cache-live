@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "cache-live",
-      "description": "Live prompt-cache timer: hooks the main thread's turns, ticks the remaining TTL each second via $.ui.status, and writes the exact window (anchor, expiresAt, token usage) to ~/.cache/ccstatusline/cache-live-<session>.json for status line scripts.",
+      "description": "Live prompt-cache timer: hooks the finished turns, ticks the remaining TTL each second via $.ui.status, and writes the exact window (anchor, expiresAt, token usage) to ~/.cache/ccstatusline/cache-live-<session>.json for status line scripts.",
       "source": "./cache-live"
     }
   ]

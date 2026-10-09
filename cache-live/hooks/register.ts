@@ -21,15 +21,16 @@ export type CacheEngine = {
 /**
  * The cache-live mod: a live prompt-cache timer.
  *
- * Hooks the main thread's finished turns, where the API reports the cache
- * reads and writes the engine already holds, and arms the session's cache
- * window on any turn that touched the cache (the provider re-arms its TTL on
- * a read as well as a write). While the window is warm it ticks the remaining
- * time each second through the engine's own clock into a pinned line under
- * the prompt: live at one refresh per second, with no status line script
- * re-invoked and nothing parsed from transcripts. It also publishes the exact
- * window (the anchor, `expiresAt` and the turn's usage) to a JSON file under
- * the cache directory on every main-thread turn, so a status line script can
+ * Hooks the finished turns, where the API reports the cache reads and writes
+ * the engine already holds, and arms the session's cache window on any turn
+ * that touched the cache — the provider re-arms its TTL on a read as well as
+ * a write, and every turn in the session runs against its shared cache
+ * prefix, subagent turns included. While the window is warm it ticks the
+ * remaining time each second through the engine's own clock into a pinned
+ * line under the prompt: live at one refresh per second, with no status line
+ * script re-invoked and nothing parsed from transcripts. It also publishes
+ * the exact window (the anchor, `expiresAt` and the turn's usage) to a JSON
+ * file under the cache directory on every turn, so a status line script can
  * count it down from an exact anchor instead of best-effort guesswork.
  *
  * No noun is added; the mod's hooks and its file are the whole of it.
@@ -105,9 +106,10 @@ export function register(on: On) {
   })
 
   on('turn.complete', async ($, e, next) => {
-    // The main conversation's cache is the status line's `prompt_cache`; a
-    // subagent's turn is its own, not this window.
-    if (engine !== null && e.agentId === undefined && e.usage !== undefined) {
+    // Any turn that touched the cache re-arms the provider's TTL: every turn
+    // in the session reads the same cache prefix, so a subagent's turn counts
+    // too (and newer engines may not tag the main loop's turn at all).
+    if (engine !== null && e.usage !== undefined) {
       const atMs = await engine.now()
       const moved = window.note(e.usage, atMs)
       if (moved) draw(engine, atMs)

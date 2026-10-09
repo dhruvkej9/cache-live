@@ -63,14 +63,14 @@ describe('register', () => {
     model: string | null
   }
 
-  test('session start shows waiting and publishes an empty window', async ($, on) => {
+  test('session start shows no pinned line yet and publishes an empty window', async ($, on) => {
     const writes: { path: string; text: string }[] = []
     const statuses: (string | undefined)[] = []
     onWorld(on, writes, statuses)
 
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
 
-    expect(statuses.at(-1)).toBe('cache · waiting')
+    expect(statuses.at(-1), "no placeholder before the first cache touch").toBeUndefined()
     expect(writes).toHaveLength(1)
     const last = parsed(writes[0]!.text)
     expect(writes[0]!.path).toBe(`${CACHE_DIR}/ccstatusline/cache-live-sess-1.json`)
@@ -97,7 +97,7 @@ describe('register', () => {
     expect(statuses.at(-1)).toBe('cache · HOT 4:00')
 
     await clock.advance(DEFAULT_TTL_MS - 60_000)
-    expect(statuses.at(-1)).toBe('cache · COLD')
+    expect(statuses.at(-1), "the line clears once the window went cold").toBeUndefined()
 
     const before = statuses.length
     await clock.advance(120_000)
@@ -129,7 +129,7 @@ describe('register', () => {
     expect(parsed(writes.at(-1)!.text).lastWriteAtMs).toBe(NOW + DEFAULT_TTL_MS - 1_000)
   })
 
-  test('a subagent turn does not touch the main window', async ($, on) => {
+  test('a subagent turn shares the session cache and arms the window', async ($, on) => {
     const writes: { path: string; text: string }[] = []
     const statuses: (string | undefined)[] = []
     onWorld(on, writes, statuses)
@@ -137,10 +137,11 @@ describe('register', () => {
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
     const before = writes.length
 
-    await $.turn.complete(turnOf(WRITING_TURN, 'sub-1'))
+    await $.turn.complete(turnOf(WRITING_TURN, 'agent-1'))
 
-    expect(statuses.at(-1)).toBe('cache · waiting')
-    expect(writes.length).toBe(before)
+    expect(statuses.at(-1)).toBe(`cache · HOT ${Math.floor(DEFAULT_TTL_MS / 60_000)}:00`)
+    expect(parsed(writes.at(-1)!.text).warm, "the subagent's cache activity armed the window").toBe(true)
+    expect(writes.length).toBe(before + 1)
   })
 
   test('a turn with no cache activity leaves the window where it was', async ($, on) => {

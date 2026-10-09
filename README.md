@@ -13,7 +13,7 @@ second. This plugin fixes both halves from inside the engine:
   pinned line under the prompt: `cache · HOT 4:59`, then `cache · COLD`.
 - **Exact.** It publishes the exact window — the anchor, `expiresAt`, TTL and
   the last turn's token usage — to `~/.cache/ccstatusline/cache-live-<session_id>.json`
-  on every main-thread turn, so a status line script can count the cache down
+  on every finished turn, so a status line script can count the cache down
   from an exact anchor instead of best-effort transcript guesswork.
 
 ## Install
