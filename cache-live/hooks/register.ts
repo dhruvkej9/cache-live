@@ -90,7 +90,12 @@ export function register(on: On) {
       userProfile: await $.env.get('USERPROFILE'),
     }
     interactive = e.isInteractive
-    window = new CacheWindow(ttlMsOf(await $.env.get('CC_CACHE_LIVE_TTL')))
+    window = new CacheWindow(
+      ttlMsOf(
+        await $.env.get('CC_CACHE_LIVE_TTL'),
+        await $.env.get('CLAUDE_CODE_PROMPT_CACHE_TTL'),
+      ),
+    )
     stopTick()
     sessionId = await engine.sessionId().catch(() => null)
     engine.setStatus(statusTextOf(window, await engine.now()))

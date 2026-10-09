@@ -182,6 +182,19 @@ describe('register', () => {
     expect(armed.expiresAtMs).toBe(NOW + HOUR_TTL_MS)
   })
 
+  test('the engine CLAUDE_CODE_PROMPT_CACHE_TTL arms the window when no override is set', async ($, on) => {
+    const writes: { path: string; text: string }[] = []
+    const statuses: (string | undefined)[] = []
+    onWorld(on, writes, statuses, { CLAUDE_CODE_PROMPT_CACHE_TTL: '1h' })
+
+    await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+    await $.turn.complete(turnOf(WRITING_TURN))
+
+    const armed = parsed(writes.at(-1)!.text)
+    expect(armed.ttl).toBe('1h')
+    expect(armed.expiresAtMs).toBe(NOW + HOUR_TTL_MS)
+  })
+
   test('session end stops the tick and clears the pinned line', async ($, on) => {
     const writes: { path: string; text: string }[] = []
     const statuses: (string | undefined)[] = []

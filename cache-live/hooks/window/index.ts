@@ -61,11 +61,17 @@ export class CacheWindow {
 }
 
 /**
- * The `CC_CACHE_LIVE_TTL` env value (`"5m"` or `"1h"`) as milliseconds; an
- * unknown value falls back to the five-minute default.
+ * The window's TTL in milliseconds: the mod's own `CC_CACHE_LIVE_TTL` when
+ * set, else the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL`, else the default.
+ * Each takes `"5m"` or `"1h"`; anything else falls back to five minutes.
  */
-export function ttlMsOf(value: string | undefined): number {
-  if (value === '1h') return HOUR_TTL_MS
+export function ttlMsOf(
+  override: string | undefined,
+  engineValue: string | undefined,
+): number {
+  if (override === '1h' || (override === undefined && engineValue === '1h')) {
+    return HOUR_TTL_MS
+  }
 
   return DEFAULT_TTL_MS
 }

@@ -31,7 +31,9 @@ claude --plugin-dir ./cache-live
 ```
 
 Environment: `CC_CACHE_LIVE_TTL=1h` for an hour TTL window (default 5m);
-`CC_CACHE_LIVE_FILE=/path/to.json` to relocate the published state file.
+the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL` setting is honored when the
+override is unset; `CC_CACHE_LIVE_FILE=/path/to.json` to relocate the
+published state file.
 
 ## Project layout
 

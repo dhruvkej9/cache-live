@@ -53,7 +53,9 @@ anchor. A turn with no cache activity leaves the window where it was, and the
 countdown runs on until it goes COLD. The window is the main conversation's,
 matching the status line's `prompt_cache`; a subagent's turn is not counted.
 
-Default TTL is 5 minutes; `CC_CACHE_LIVE_TTL=1h` switches to an hour.
+Default TTL is 5 minutes; `CC_CACHE_LIVE_TTL=1h` switches to an hour. When
+`CC_CACHE_LIVE_TTL` is unset, the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL`
+setting is honored, then the 5-minute default.
 
 ## The published file
 
