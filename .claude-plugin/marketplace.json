@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-plugin-marketplace.json",
+  "name": "cache-live",
+  "description": "A live prompt-cache timer for Claude Code: ticks the HOT countdown every second and publishes the exact cache window for status lines.",
+  "owner": {
+    "name": "dhruvkej9",
+    "url": "https://github.com/dhruvkej9"
+  },
+  "version": "0.1.0",
+  "plugins": [
+    {
+      "name": "cache-live",
+      "description": "Live prompt-cache timer: hooks the main thread's turns, ticks the remaining TTL each second via $.ui.status, and writes the exact window (anchor, expiresAt, token usage) to ~/.cache/ccstatusline/cache-live-<session>.json for status line scripts.",
+      "source": "./cache-live"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "description": "The live cache timer: arms the session's prompt-cache window on the main thread's finished turns, ticks the remaining time each second into a pinned status line while the window is warm, and writes the exact window to a JSON file under the cache directory on every turn",
+  "modules": ["./register.ts"]
+}
