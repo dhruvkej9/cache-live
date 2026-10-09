@@ -108,7 +108,21 @@ reads and writes re-arm often enough to keep the countdown honest.
 
 The suite drives the mod through the engine's own test kit: a cache-write
 turn arms a five-minute window, the clock ticks the countdown live, a
-cache-read turn re-arms it, a subagent's turn is ignored, a turn without
-cache activity leaves the window alone, the `CC_CACHE_LIVE_TTL` /
-`CC_CACHE_LIVE_FILE` env honors, and session end stops the tick and clears the
-line.
+cache-read turn re-arms it, a subagent turn shares the session's cache and
+arms it too, a turn without cache activity leaves the window alone, the
+`CC_CACHE_LIVE_TTL` / `CLAUDE_CODE_PROMPT_CACHE_TTL` / `CC_CACHE_LIVE_FILE`
+env honors, and session end stops the tick and clears the line.
+
+## ccstatusline
+
+ccstatusline's built-in Cache Timer derives the window from the transcript
+heuristic, which can flash a false "HOT" on a command like `/reload-plugins`
+(an un-answered user line looks like work in progress). To make it render the
+exact window instead — the plugin's published file for the current session —
+apply the bundled patch:
+
+    ~/.local/bin/ccstatusline-cachelive-patch
+
+It is idempotent and re-runnable after `npm update ccstatusline` overwrites
+the bundle. With the file present the Cache Timer shows the exact
+`expiresAtMs` countdown; with no window it shows `n/a` instead of guessing.
