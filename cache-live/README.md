@@ -57,10 +57,12 @@ anchor, and every turn in the session — subagent turns included — reads the
 same shared cache prefix. A turn with no cache activity leaves the window
 where it was; the countdown runs on until it goes cold.
 
-A reopened session is seeded from its own transcript's last cache-touching
-turn, so the timer shows again immediately on `claude --resume` — no new turn
-needed. Only real API usage counts; a command like `/reload-plugins` is no
-news.
+A reopened session is seeded from the window the mod itself last published to
+its state file (below) — a few hundred bytes, whatever the transcript's size —
+so the timer shows again immediately on `claude --resume`, before any new
+turn; a session restarted from a window that never armed simply waits its
+first cache-touching turn. Only real API usage counts; a command like
+`/reload-plugins` is no news.
 
 Default TTL is 5 minutes; `CC_CACHE_LIVE_TTL=1h` switches to an hour. When
 `CC_CACHE_LIVE_TTL` is unset, the engine's `CLAUDE_CODE_PROMPT_CACHE_TTL`

@@ -2,7 +2,7 @@ import type { On, Timer, TurnUsage } from 'claude-code'
 
 import { cacheFileOf } from './path'
 import type { CacheFileEnv } from './path'
-import { readSeed } from './seed'
+import { readStateSeed } from './seed'
 import { stateOf } from './state'
 import { statusTextOf } from './text'
 import { CacheWindow, ttlMsOf } from './window'
@@ -27,8 +27,11 @@ export type CacheEngine = {
  * the engine already holds, and arms the session's cache window on any turn
  * that touched the cache — the provider re-arms its TTL on a read as well as
  * a write, and every turn in the session runs against its shared cache
- * prefix, subagent turns included. A reopened session is seeded from its own
- * transcript, so the window is warm again before any new turn completes.
+ * prefix, subagent turns included. A reopened session is seeded from the
+ * window the mod itself published to its state file on the previous run — a
+ * few hundred bytes, exact — rather than re-reading the whole transcript, so
+ * the countdown is right again before any new turn completes, no matter how
+ * large the transcript has grown.
  *
  * While the window is warm in an interactive session, the mod pins its own
  * status line under the prompt (`$.ui.status`) and ticks the remaining time
@@ -119,13 +122,16 @@ export function register(on: On) {
     )
     stopTick()
     sessionId = await engine.sessionId().catch(() => null)
-    const seed = await readSeed(
+    const stateSeed = await readStateSeed(
       engine,
-      fileEnv.home ?? fileEnv.userProfile,
-      e.cwd,
-      sessionId,
+      cacheFileOf({ ...fileEnv, sessionId: sessionId ?? undefined }),
     ).catch(() => null)
-    if (seed !== null) window.note(seed.usage, seed.atMs)
+    if (stateSeed !== null) {
+      window.warm = true
+      window.lastWriteAtMs = stateSeed.lastWriteAtMs
+      window.ttlMs = stateSeed.ttlMs
+      window.usage = stateSeed.usage
+    }
     draw(engine, await engine.now())
     await writeState(engine, window.usage).catch(() => undefined)
 

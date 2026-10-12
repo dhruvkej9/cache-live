@@ -1,83 +1,62 @@
 import type { TurnUsage } from 'claude-code'
 
-/**
- * The last cache-touching turn a session's transcript records, with the
- * moment it happened. This is how a resumed session learns its cache is still
- * warm before any new turn completes — `turn.complete` only reports turns
- * that finish after the plugin loaded, so without it a reopened session would
- * show nothing until the next prompt.
- */
-export type CacheSeed = { usage: TurnUsage; atMs: number } | null
+import type { CacheLiveState } from '../state'
 
 /**
- * The path of the session's transcript on disk: the projects directory names
- * a folder after the working directory (its absolute path with `/`→`-`) and
- * the file after the session id. Best effort — a version that encodes
- * differently just yields a missing file, and the seed falls back silently.
+ * A cache window read back at session start: a resume carries the exact
+ * window the previous run published (anchor, TTL, warmth) with no transcript
+ * scan at all — the state file is a few hundred bytes even for a session
+ * whose transcript runs to hundreds of megabytes.
  */
-export function transcriptPathOf(
-  home: string | undefined,
-  cwd: string,
-  sessionId: string,
-): string {
-  if (home === undefined) return ''
-  return `${home}/.claude/projects/${cwd.replaceAll('/', '-')}/${sessionId}.jsonl`
+export type StateSeed = {
+  lastWriteAtMs: number
+  ttlMs: number
+  usage: TurnUsage | null
 }
 
 /**
- * The newest assistant-turn entry in the transcript whose API usage shows
- * real cache activity (a write or a read), and when it landed. Strict: a
- * line without usage, an API error or a sidechain is skipped, so a plain
- * user command like `/reload-plugins` is no news — unlike the loose status
- * line heuristics that flash HOT on it.
+ * The state file path carries the session's window with it, read at resume.
  */
-export function lastCacheSeedOf(text: string): CacheSeed {
-  let seed: CacheSeed = null
-  for (const line of text.split('\n')) {
-    if (line.trim() === '') continue
-    try {
-      const entry = JSON.parse(line) as {
-        isSidechain?: boolean
-        isApiErrorMessage?: boolean
-        timestamp?: string
-        message?: { usage?: TurnUsage }
-      }
-      if (entry.isSidechain === true || entry.isApiErrorMessage === true) {
-        continue
-      }
-      const usage = entry.message?.usage
-      if (!usage) continue
-      if (
-        (usage.cache_creation_input_tokens ?? 0) <= 0 &&
-        (usage.cache_read_input_tokens ?? 0) <= 0
-      ) {
-        continue
-      }
-      const atMs = entry.timestamp ? Date.parse(entry.timestamp) : Number.NaN
-      if (Number.isNaN(atMs)) continue
-      seed = { usage, atMs }
-    } catch {
-      continue
-    }
+export type StateSeedHost = {
+  readFile: (path: string) => Promise<string>
+}
+
+/**
+ * Reads the mod's published state file and returns the window it recorded:
+ * null when the file is missing, unreadable, not ours, or the window was not
+ * warm when it was last written.
+ */
+export async function readStateSeed(
+  host: StateSeedHost,
+  path: string,
+): Promise<StateSeed | null> {
+  let text: string
+  try {
+    text = await host.readFile(path)
+  } catch {
+    return null
   }
 
-  return seed
-}
+  try {
+    const state = JSON.parse(text) as CacheLiveState
+    if (state.schema !== 1) return null
+    if (state.warm !== true || state.lastWriteAtMs == null) return null
 
-/**
- * Reads the session's transcript and finds the last cache-touching turn.
- * Null when the transcript is missing or unreadable, has no cache activity,
- * or the session id is unknown.
- */
-export async function readSeed(
-  host: { readFile: (path: string) => Promise<string> },
-  home: string | undefined,
-  cwd: string,
-  sessionId: string | null,
-): Promise<CacheSeed> {
-  if (sessionId === null) return null
-  const path = transcriptPathOf(home, cwd, sessionId)
-  if (path === '') return null
+    const cacheRead = state.tokens.cacheRead ?? 0
+    const cacheCreated = state.tokens.cacheCreated ?? 0
+    const usage: TurnUsage | null =
+      cacheRead > 0 || cacheCreated > 0
+        ? {
+            input_tokens: state.tokens.input ?? 0,
+            output_tokens: state.tokens.output ?? 0,
+            cache_read_input_tokens: cacheRead,
+            cache_creation_input_tokens: cacheCreated,
+            model: state.model ?? '',
+          }
+        : null
 
-  return lastCacheSeedOf(await host.readFile(path))
+    return { lastWriteAtMs: state.lastWriteAtMs, ttlMs: state.ttlMs, usage }
+  } catch {
+    return null
+  }
 }
