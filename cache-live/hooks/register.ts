@@ -23,12 +23,12 @@ export type CacheEngine = {
 /**
  * The cache-live mod: a live prompt-cache timer and status line.
  *
- * Hooks the finished turns, where the API reports the cache reads and writes
- * the engine already holds, and arms the session's cache window on any turn
- * that touched the cache — the provider re-arms its TTL on a read as well as
- * a write, and every turn in the session runs against its shared cache
- * prefix, subagent turns included. A reopened session is seeded from the
- * window the mod itself published to its state file on the previous run — a
+ * Hooks the model's responses as they resolve — each step's own API usage on
+ * the main loop and on subagent steps alike, since an engine may report no
+ * usage on a finished turn, and arms the session's cache window on any cache
+ * touch: the provider re-arms its TTL on a read as well as a write, and every
+ * turn in the session runs against its shared cache prefix, subagent turns
+ * included. A reopened session is seeded from the window the mod itself published to its state file on the previous run — a
  * few hundred bytes, exact — rather than re-reading the whole transcript, so
  * the countdown is right again before any new turn completes, no matter how
  * large the transcript has grown.
@@ -37,11 +37,11 @@ export type CacheEngine = {
  * status line under the prompt (`$.ui.status`) and ticks the remaining time
  * each second through `$.clock.every`: a live countdown drawn by the mod
  * itself — `cache · 🟢 4:59` — that flips to `cache · COLD` the moment the
- * window passes its TTL, and reads nothing only before the first cache
- * touch. No status line script is re-invoked and nothing is parsed from
- * transcripts. It also publishes the exact window (the anchor, `expiresAt`
- * and the turn's usage) to a JSON file under the cache directory on every
- * turn, for scripts that want the same anchor outside the session.
+ * window passes its TTL, and reads `cache · idle` only before the first
+ * cache touch. No status line script is re-invoked and nothing is parsed
+ * from transcripts. It also publishes the exact window (the anchor,
+ * `expiresAt` and the turn's usage) to a JSON file under the cache directory
+ * on every turn, for scripts that want the same anchor outside the session.
  *
  * The mod draws nothing in non-interactive runs; the hooks still arm and
  * publish there, so a status line script can count the window down from the
@@ -150,6 +150,28 @@ export function register(on: On) {
     }
 
     return next(e)
+  })
+
+  on('turn.step', async function* ($, e, next) {
+    // A step's API response names the cache the request read or wrote, on the
+    // main loop and on the subagent steps that share the session's prefix —
+    // traffic the finished-turn event above may not deliver usage for. Arms
+    // from the first cache-touching step, subagent or not, so the timer comes
+    // up while the work it tracks is still streaming.
+    const r = yield* next(e)
+    if (
+      engine !== null &&
+      r !== undefined &&
+      r.usage !== null &&
+      r.usage.cache_creation_input_tokens + r.usage.cache_read_input_tokens > 0
+    ) {
+      const atMs = await engine.now()
+      const moved = window.note(r.usage, atMs)
+      if (moved) draw(engine, atMs)
+      await writeState(engine, r.usage).catch(() => undefined)
+    }
+
+    return r
   })
 
   on('session.end', async ($, e, next) => {

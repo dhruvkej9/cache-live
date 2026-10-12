@@ -43,19 +43,21 @@ plugin` generates.
 The mod draws the timer itself: while the window is warm in an interactive
 session it pins its own status line under the prompt — `cache · 🟢 4:59` —
 and ticks it once a second through the engine's clock (`$.clock.every` +
-`$.ui.status`). Nothing is drawn until a turn has touched the cache (the
-line has no "waiting" placeholder); once the window is past its TTL the same
-line reads `cache · COLD`, so a lapsed cache is visible and the next turn
-rebuilds it. This is the mod's own line (not a ccstatusline segment), pinned
+`$.ui.status`). Before the first cache touch the same line reads
+`cache · idle`; once the window is past its TTL it reads `cache · COLD`, so a
+lapsed cache is visible and the next step rebuilds it. This is the mod's own
+line (not a ccstatusline segment), pinned
 beside the engine's own notices at the bottom of the screen, and the
 published state file (still below) remains for any script that wants the
 same anchor outside the session.
 
-A cache read or a cache write on any finished turn re-arms the window: the
+A cache read or a cache write on any model step re-arms the window: the
 provider re-arms its TTL on a read as well as a write, so both reset the
-anchor, and every turn in the session — subagent turns included — reads the
-same shared cache prefix. A turn with no cache activity leaves the window
-where it was; the countdown runs on until it goes cold.
+anchor. The mod reads each step's own API usage as the responses resolve — on
+the main loop and on subagent steps alike, since an engine may report no
+usage on a finished turn — and every step in the session reads the same
+shared cache prefix. A step with no cache activity leaves the window where
+it was; the countdown runs on until it goes cold.
 
 A reopened session is seeded from the window the mod itself last published to
 its state file (below) — a few hundred bytes, whatever the transcript's size —
@@ -73,7 +75,7 @@ the window promotes to it.
 
 ## The published file
 
-Every finished turn with usage (and at session start and end) writes the
+Every cache-touching model step (and at session start and end) writes the
 exact window to
 
     ~/.cache/ccstatusline/cache-live-<session_id>.json
@@ -106,10 +108,10 @@ parsing, and the value is right at the moment it is drawn.
 
 ## Best effort
 
-The anchor is the finished turn's *completion* time, so during one very
-long turn the fresh window is stamped up to a turn-duration late. That is the
-same best-effort the transcript-based status lines already ship, and per-session
-reads and writes re-arm often enough to keep the countdown honest.
+The anchor is the most recent cache-touching *step's* resolution time, so
+during one very long turn the fresh window keeps re-stamping as each cache
+read or write resolves — the countdown stays honest mid-turn, not up to a
+turn late.
 
 ## ccstatusline (optional)
 
@@ -123,4 +125,4 @@ patch:
 
 It is idempotent and re-runnable after `npm update ccstatusline` overwrites
 the bundle. With the file present the Cache Timer shows the exact
-`expiresAtMs` countdown; with no window it shows `n/a` instead of guessing.
+`expiresAtMs` countdown; with no window it shows `idle` instead of guessing.

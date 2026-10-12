@@ -3,16 +3,16 @@ import type { CacheWindow } from '../window'
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 /**
- * The pinned status line for a window at a moment: a live countdown while
- * the window is warm, COLD once it has passed its TTL, and nothing before
- * the first cache touch. The line is always there once a window exists, so a
- * cold cache reads plainly — the next turn will rebuild it.
+ * The pinned status line for a window at a moment. The line is always drawn
+ * in an interactive session so the mod is never silent: `cache · idle` until
+ * a turn has touched the cache, a live countdown while the window is warm,
+ * and COLD once it has passed its TTL.
  */
 export function statusTextOf(
   window: CacheWindow,
   atMs: number,
-): string | undefined {
-  if (!window.warm) return undefined
+): string {
+  if (!window.warm) return 'cache · idle'
   if (window.expired(atMs)) return 'cache · COLD'
 
   return `cache · 🟢 ${countdownOf(window, atMs)}`
